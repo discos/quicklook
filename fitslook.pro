@@ -24,7 +24,7 @@ pro fitslook, pin=pin, x=x, y=y, help=help, freewin=freewin
   ; and the Y-axis is given in raw counts.
   ;
   ; Usage:
-  ; fits_look [,pin=] [,x=] [,y=] [,/help]
+  ; fitslook [,pin=] [,x=] [,y=] [,/help]
   ; where
   ; pin = full path to data folder (the one containing the scans subfolders)
   ; x = letter indicating the choice for the x-axis label, default is 's' (for TP only)
