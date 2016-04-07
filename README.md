@@ -7,6 +7,7 @@ quick-look to inspect each SUBSCAN during continuum (when output is in FITS form
 Compile and retrieve full information:
 
 IDL> .r fitslook
+
 IDL> fitslook, /help
 
 
@@ -16,4 +17,5 @@ quick-look to inspect each SCAN during XARCOS acquisitions with DISCOS. The scan
 Compile and retrieve full information:
 
 IDL> .r onoff
+
 IDL> onoff, /help
