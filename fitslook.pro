@@ -39,7 +39,7 @@ pro fitslook, pin=pin, x=x, y=y, help=help, freewin=freewin
   ; where username and yyyymmdd are extracted from the running system.
 
   ; Author: S.Righini
-  ; Latest update: March 15th 2016
+  ; Latest update: April 20th 2016
 
 
   timestring=systime(/UTC)
@@ -129,8 +129,8 @@ pro fitslook, pin=pin, x=x, y=y, help=help, freewin=freewin
     print, "with Nuraghe >0.3 or ESCS >0.3 "
     print, "Best of luck! "
   endif
-  
-    ; setting the plot depending on the operating system
+
+  ; setting the plot depending on the operating system
   if path_sep() eq '/' then begin
     set_plot, 'x'    ; this is a Linux/OSX machine
   endif else begin
@@ -197,7 +197,7 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
   large=1.70
   medium=1.55
   small=1.35
-  
+
   ; listing the data FITS files written in the folder.
   ; by searching only for files named '2*.fits' the 'summary.fits' one is avoided
   list=file_search(path+sp+'2*.fits',COUNT=number,/FULLY_QUALIFY_PATH)
@@ -205,8 +205,8 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
     print, 'No FITS files in folder. Waiting...'
     ;Empty window, printing info inside window
     plot, [0,100],[0,100], /NODATA, /DEVICE, xstyle=4, ystyle=4, $
-    xticks=[1], xminor=1, $
-    yticks=[1], yminor=1
+      xticks=[1], xminor=1, $
+      yticks=[1], yminor=1
     xyouts, 100,400,'No FITS files in folder. Waiting...',charsize=large*3, charthick=2.0, /DEVICE
     return
   endif
@@ -365,10 +365,21 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
     datatype='CONTINUUM'
     streams=dblarr(n_sect,ndat)
     rows=ceil((n_sect+1)/5.0)
-    if n_sect le 2 then !p.multi=[0,3,1] else !p.multi=[0,5,rows]
+    foursect='no'
+    if n_sect le 2 then begin
+      !p.multi=[0,3,1]
+    endif else begin
+      if n_sect gt 2 and n_sect le 4 then begin
+        !p.multi=[0,3,2]
+        if n_sect eq 4 then foursect='yes'
+      endif else begin
+        !p.multi=[0,5,rows]
+      endelse
+    endelse
+  
     ; labels for plots
     chtitle=["F0 L","F0 R","F1 L","F1 R","F2 L","F2 R","F3 L","F3 R","F4 L","F4 R","F5 L","F5 R", "F6 L","F6 R", $
-             "F7 L","F7 R","F8 L","F8 R"]
+      "F7 L","F7 R","F8 L","F8 R"]
   endif else begin
     datatype='SPECTRA'
     streams=dblarr(n_sect*2,bins)
@@ -376,10 +387,10 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
     if n_sect*2 le 2 then !p.multi=[0,3,1] else !p.multi=[0,5,rows]
     ; labels for plots
     chtitle=["Sect0 L","Sect0 R","Sect1 L","Sect1 R","Sect2 L","Sect2 R","Sect3 L","Sect3 R","Sect4 L","Sect4 R", $
-            "Sect5 L","Sect5 R", "Sect6 L","Sect6 R","Sect7 L","Sect7 R","Sect8 L","Sect8 R"]
+      "Sect5 L","Sect5 R", "Sect6 L","Sect6 R","Sect7 L","Sect7 R","Sect8 L","Sect8 R"]
   endelse
 
-  ; horizontal coordinates at mid-subscan 
+  ; horizontal coordinates at mid-subscan
   elevation=data[ndat/2].el/!dpi*180.0
   azimuth=data[ndat/2].az/!dpi*180.0
 
@@ -388,7 +399,7 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
     xticks=[1], xminor=1, $
     yticks=[1], yminor=1
   xyouts, 0.1, 0.90, datatype, $
-    charsize=xxl, charthick=0.4   
+    charsize=xxl, charthick=0.4
   xyouts, 0.1, 0.80, 'UT = '+ut, $
     charsize=large, charthick=0.4
   xyouts, 0.1, 0.70, 'Schedule = '+schedname, $
@@ -401,17 +412,17 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
     charsize=small, charthick=0.4
   xyouts, 0.1, 0.38, 'Elevation = '+string(elevation,format='(D4.1)')+' deg', $
     charsize=small, charthick=0.4
-  xyouts, 0.1, 0.26, 'Azimuth = '+string(azimuth,format='(D5.1)')+' deg', $
+  xyouts, 0.1, 0.30, 'Azimuth = '+string(azimuth,format='(D5.1)')+' deg', $
     charsize=small, charthick=0.4
-  xyouts, 0.1, 0.18, 'Sampling int. = '+string(dt, format='(F6.3)')+' s', $
+  xyouts, 0.1, 0.22, 'Sample time step = '+string(dt, format='(F6.3)')+' s', $
     charsize=small, charthick=0.4
-  xyouts, 0.1, 0.10, 'Bad track samples = '+warn, $
+  xyouts, 0.1, 0.14, 'Bad track samples = '+warn, $
     charsize=small, charthick=0.4
 
   if bins eq 1 then begin
-    
+
     ; these are TOTAL POWER data
-    
+
     for st=0, n_sect-1 do begin
       ; reading FEED TABLE (binary data table n.2 of the Nuraghe/ESCS0.4 FITS file)
       rftable=mrdfits(list[i],2,/SILENT)
@@ -486,6 +497,13 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
         ntick=3
       endelse
 
+      ; plotting an empty area in order to orderly design the display when only 4 sections are available
+      if st eq 2 and foursect eq 'yes' then begin
+        plot, [0,1],[0,1], /NODATA, xstyle=4, ystyle=4, $
+          xticks=[1], xminor=1, $
+          yticks=[1], yminor=1
+      endif
+
       plot, xaxis,streams[st,*], $
         title = chtitle[st], $
         xtitle = xlabel, $
@@ -505,9 +523,9 @@ pro last_fits, path=path, xtype=xtype, ytype=ytype
   endif else begin
 
     for st=0, (n_sect*2)-1 do begin
-      
+
       ; these are SPECTRAL DATA, so I force the output options
-      
+
       xaxis=indgen(bins)
       xlabel='Bin number'
 
