@@ -37,7 +37,7 @@ pro onoff, dutyc=dutyc, b0=b0, b1=b1, b2=b2, b3=b3, xtype=xtype, pin=pin, freewi
   ;  Best of luck!
   ;
   ;  Author: S.Righini
-  ;  Latest update: April 5th 2016
+  ;  Latest update: June 23rd 2016
 
   if (keyword_set(help) eq 1) then begin
     print, "The procedure iteratively shows the *RAW* (ON-OFF)/OFF scans right after they"
@@ -249,6 +249,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
   n_off=fix(phases[1])
   n_cal=fix(phases[2])
   fullc=n_on+n_off+n_cal
+  count_on_spectra=0
   datatype='SPECTRA'
 
   ; Has at least one cycle been completed?
@@ -331,10 +332,10 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
   for c=0, cycles-1 do begin
 
     ; within a cycle
-    for i=0, fullc do begin
+    for i=0, fullc-1 do begin
 
       ; reading RAW DATA TABLE (binary data table n.4 of the Nuraghe/ESCS0.3 FITS file)
-      data=mrdfits(list[c*fullc+i-1],4,/SILENT)
+      data=mrdfits(list[c*fullc+i],4,/SILENT)
       ndat=n_elements(data.time)
 
       ; section-dependant parameters and data: storage arrays
@@ -348,7 +349,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
       for st=0, (n_sect*2)-1 do begin
 
         ; reading FEED TABLE (binary data table n.2 of the Nuraghe/ESCS0.4 FITS file)
-        rftable=mrdfits(list[c*fullc+i-1],2,/SILENT)
+        rftable=mrdfits(list[c*fullc+i],2,/SILENT)
         bandwidth=rftable[st].bandWidth   ; MHz
         bw[st]=strcompress(string(bandwidth, format='(D7.2)'),/remove_all)+' MHz' ; string
         frequency[st]=double((rftable[st].frequency+bandwidth/2.0))/1000.    ; GHz
@@ -416,6 +417,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
         ; is it an ON subscan, or an OFF subscan? Knowing the duty cycle, we can tell.
         if i lt n_on then begin
           integ_on[st,*]=integ_on[st,*]+streams[st,*]
+          count_on_spectra=count_on_spectra+n_spectra
         endif
         if i ge n_on and i lt (n_on+n_off) then begin
           integ_off[st,*]=integ_off[st,*]+streams[st,*]
@@ -448,7 +450,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
     charsize=medium, charthick=0.4
   xyouts, 0.1, 0.46, 'Completed ON-OFF cycles = '+strcompress(string(cycles, format='(I)')), $
     charsize=medium, charthick=0.4
-  xyouts, 0.1, 0.38, 'ON Total Integration = '+string(n_on*n_spectra*cycles*double(integration)/1000.0,format='(F7.2)')+' s', $
+  xyouts, 0.1, 0.38, 'ON Total Integration = '+string(count_on_spectra/(n_sect*2)*double(integration)/1000.0,format='(F7.2)')+' s', $
     charsize=medium, charthick=0.4
   xyouts, 0.1, 0.26, 'Elevation = '+string(elevation,format='(D4.1)')+' deg', $
     charsize=medium, charthick=0.4
