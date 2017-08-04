@@ -37,7 +37,7 @@ pro onoff, dutyc=dutyc, b0=b0, b1=b1, b2=b2, b3=b3, xtype=xtype, pin=pin, freewi
   ;  Best of luck!
   ;
   ;  Author: S.Righini
-  ;  Latest update: June 23rd 2016
+  ;  Latest update: Aug 4th 2017
 
   if (keyword_set(help) eq 1) then begin
     print, "The procedure iteratively shows the *RAW* (ON-OFF)/OFF scans right after they"
@@ -156,6 +156,7 @@ pro onoff, dutyc=dutyc, b0=b0, b1=b1, b2=b2, b3=b3, xtype=xtype, pin=pin, freewi
         xticks=[1], xminor=1, $
         yticks=[1], yminor=1
       xyouts, 100,400,'Waiting for a complete ON-OFF scan...',charsize=large*3, charthick=2.0, /DEVICE
+      ; stop
     endif else begin
       p=listdir[-2]
       showdata, p, xtype, b0, b1, b2, b3, dutyc
@@ -216,28 +217,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
   ; now I need the summary.fits file...
   summaryfits=file_search(path+sp+'summary.fits',COUNT=summarynum,/FULLY_QUALIFY_PATH)
 
-  ; The following checks should be redundant, as the selected folder should always
-  ; contain a completed scan.
-  ; However, it is better to leave them, as users might have interrupted a scan, producing
-  ; an incomplete acquisition or even empty folders.
-  if number eq 0 then begin
-    print, 'No FITS files in folder. Waiting...'
-    ;Empty window, printing info inside window
-    plot, [0,100],[0,100], /NODATA, /DEVICE, xstyle=4, ystyle=4, $
-      xticks=[1], xminor=1, $
-      yticks=[1], yminor=1
-    xyouts, 100,400,'No FITS files in folder. Waiting...',charsize=large*3, charthick=2.0, /DEVICE
-    return
-  endif
-  if summarynum eq 0 then begin
-    print, 'No Summary file in folder. Waiting...'
-    ;Empty window, printing info inside window
-    plot, [0,100],[0,100], /NODATA, /DEVICE, xstyle=4, ystyle=4, $
-      xticks=[1], xminor=1, $
-      yticks=[1], yminor=1
-    xyouts, 100,400,'No summary.fits file in folder. Waiting...',charsize=large*3, charthick=2.0, /DEVICE
-    return
-  endif
+
 
   ;Everything's fine. So I extract the folder/scan name
   pathstrings=strsplit(path,sp,/extract)
@@ -250,7 +230,31 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
   n_cal=fix(phases[2])
   fullc=n_on+n_off+n_cal
   count_on_spectra=0
+  count_off_spectra=0
   datatype='SPECTRA'
+  
+  ; The following checks should be redundant, as the selected folder should always
+  ; contain a completed scan.
+  ; However, it is better to leave them, as users might have interrupted a scan, producing
+  ; an incomplete acquisition or even empty folders.
+  if number lt (fullc) then begin
+    print, 'No completed cycle in folder. Waiting for a full one...'
+    ;Empty window, printing info inside window
+    plot, [0,100],[0,100], /NODATA, /DEVICE, xstyle=4, ystyle=4, $
+      xticks=[1], xminor=1, $
+      yticks=[1], yminor=1
+    xyouts, 100,400,'No completed cycle in folder. Waiting for a full one...',charsize=large*3, charthick=2.0, /DEVICE
+    return
+  endif
+  if summarynum eq 0 then begin
+    print, 'No Summary file in folder. Waiting...'
+    ;Empty window, printing info inside window
+    plot, [0,100],[0,100], /NODATA, /DEVICE, xstyle=4, ystyle=4, $
+      xticks=[1], xminor=1, $
+      yticks=[1], yminor=1
+    xyouts, 100,400,'No summary.fits file in folder. Waiting...',charsize=large*3, charthick=2.0, /DEVICE
+    return
+  endif
 
   ; Has at least one cycle been completed?
   if number lt (n_on+n_off) then begin
@@ -335,7 +339,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
     for i=0, fullc-1 do begin
 
       ; reading RAW DATA TABLE (binary data table n.4 of the Nuraghe/ESCS0.3 FITS file)
-      data=mrdfits(list[c*fullc+i],4,/SILENT)
+      data=mrdfits(list[c*fullc+i],4,/SILENT)    ; 1 subscan of the cycle
       ndat=n_elements(data.time)
 
       ; section-dependant parameters and data: storage arrays
@@ -421,6 +425,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
         endif
         if i ge n_on and i lt (n_on+n_off) then begin
           integ_off[st,*]=integ_off[st,*]+streams[st,*]
+          count_off_spectra=count_off_spectra+n_spectra
         endif
 
       endfor
