@@ -383,6 +383,7 @@ pro showdata, path, xt, box0, box1, box2, box3, dutystr
             xlabel[st]='Frequency (MHz)'
           end
           else: begin
+            if (i eq 0) and (st eq 0) then print, 'Unrecognised xtype label, using frequency bins on the x-axis'
             xaxis[st,*]=binaxis
             xlabel[st]='Frequency bin number'
           end
